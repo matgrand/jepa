@@ -1,7 +1,4 @@
-import numpy as np
-import torch
-import matplotlib.pyplot as plt
-from utils import SIGReg
+from utils import *
 from double_pendulum import DoublePendulum
 
 
@@ -39,38 +36,37 @@ def test_sigreg():
     proj_init  = (Z_init  @ u).numpy()
     proj_final = (Z_final @ u).numpy()
 
-    fig, axes = plt.subplots(1, 3, figsize=(14, 4))
-    fig.suptitle("SIGReg test: gradient-descending a free embedding toward N(0,I)", fontsize=12)
+    plt.figure(figsize=(14, 4))
+    plt.suptitle("SIGReg test: gradient-descending a free embedding toward N(0,I)", fontsize=12)
 
     # Panel 1: loss curve
-    ax = axes[0]
-    ax.plot(losses)
-    ax.set_xlabel("step")
-    ax.set_ylabel("SIGReg loss")
-    ax.set_title("Loss curve")
-    ax.set_yscale("log")
+    plt.subplot(1, 3, 1)
+    plt.plot(losses)
+    plt.xlabel("step")
+    plt.ylabel("SIGReg loss")
+    plt.title("Loss curve")
+    plt.yscale("log")
 
     # Panel 2: 1D projection histogram before/after vs N(0,1)
-    import numpy as np
-    ax = axes[1]
+    plt.subplot(1, 3, 2)
     bins = 40
-    ax.hist(proj_init,  bins=bins, alpha=0.5, density=True, label="initial")
-    ax.hist(proj_final, bins=bins, alpha=0.5, density=True, label="final")
+    plt.hist(proj_init,  bins=bins, alpha=0.5, density=True, label="initial")
+    plt.hist(proj_final, bins=bins, alpha=0.5, density=True, label="final")
     x = np.linspace(-4, 4, 200)
-    ax.plot(x, np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi), "k--", label="N(0,1)")
-    ax.set_xlabel("projection value")
-    ax.set_title("1D projection histogram")
-    ax.legend()
+    plt.plot(x, np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi), "k--", label="N(0,1)")
+    plt.xlabel("projection value")
+    plt.title("1D projection histogram")
+    plt.legend()
 
     # Panel 3: first two dimensions scatter
-    ax = axes[2]
-    ax.scatter(Z_init[:, 0].numpy(),  Z_init[:, 1].numpy(),  alpha=0.3, s=5, label="initial")
-    ax.scatter(Z_final[:, 0].numpy(), Z_final[:, 1].numpy(), alpha=0.3, s=5, label="final")
-    ax.set_xlabel("dim 0")
-    ax.set_ylabel("dim 1")
-    ax.set_title("Embedding scatter (dims 0-1)")
-    ax.legend()
-    ax.set_aspect("equal")
+    plt.subplot(1, 3, 3)
+    plt.scatter(Z_init[:, 0].numpy(),  Z_init[:, 1].numpy(),  alpha=0.3, s=5, label="initial")
+    plt.scatter(Z_final[:, 0].numpy(), Z_final[:, 1].numpy(), alpha=0.3, s=5, label="final")
+    plt.xlabel("dim 0")
+    plt.ylabel("dim 1")
+    plt.title("Embedding scatter (dims 0-1)")
+    plt.legend()
+    plt.gca().set_aspect("equal")
 
     plt.tight_layout()
     plt.savefig("test_sigreg.png", dpi=120)
@@ -87,12 +83,12 @@ def test_sigreg():
 
 def test_double_pendulum():
     """Simulate a double pendulum from a near-inverted position and animate it."""
-    dp = DoublePendulum(m1=1.0, m2=0.5, l1=1.0, l2=0.8, b=0.05, max_torque=5.0, dt=0.02)
+    dp = DoublePendulum(m1=1.0, m2=0.5, l1=1.0, l2=0.8, b=0.05, max_torque=5.0, dt=0.01)
     x0 = np.array([np.pi - 0.2, np.pi + 0.1, 0.0, 0.0])
     traj = dp.sim(x0, u=0.0, t=10.0)
     dp.plot(traj)
 
 
 if __name__ == "__main__":
-    test_sigreg()
+    # test_sigreg()
     test_double_pendulum()

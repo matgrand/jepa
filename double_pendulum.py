@@ -101,7 +101,6 @@ class DoublePendulum:
             traj:      trajectory array of shape (T, 4) from sim()
             save_path: if given, save the animation as a .gif or .mp4
         """
-        import matplotlib.animation as animation
         T = len(traj)
         time = np.arange(T) * self.dt
 
@@ -116,18 +115,19 @@ class DoublePendulum:
 
         # --- animation panel (left half) ---
         ax_anim = fig.add_axes([0.02, 0.08, 0.28, 0.84])
+        plt.sca(ax_anim)
         lim = (self.l1 + self.l2) * 1.1
-        ax_anim.set_xlim(-lim, lim)
-        ax_anim.set_ylim(-lim, lim)
-        ax_anim.set_aspect("equal")
-        ax_anim.set_title("Double pendulum")
-        ax_anim.axhline(0, color="gray", lw=0.5, ls="--")
-        ax_anim.axvline(0, color="gray", lw=0.5, ls="--")
+        plt.xlim(-lim, lim)
+        plt.ylim(-lim, lim)
+        plt.gca().set_aspect("equal")
+        plt.title("Double pendulum")
+        plt.axhline(0, color="gray", lw=0.5, ls="--")
+        plt.axvline(0, color="gray", lw=0.5, ls="--")
 
         trail_len = min(50, T)
-        trail, = ax_anim.plot([], [], "b-", lw=0.8, alpha=0.4)
-        rod,   = ax_anim.plot([], [], "k-o", lw=2, ms=6)
-        time_txt = ax_anim.text(0.02, 0.95, "", transform=ax_anim.transAxes, fontsize=9)
+        trail, = plt.plot([], [], "b-", lw=0.8, alpha=0.4)
+        rod,   = plt.plot([], [], "k-o", lw=2, ms=6)
+        time_txt = plt.text(0.02, 0.95, "", transform=ax_anim.transAxes, fontsize=9)
 
         # --- state panels (right half, 2x2 grid) ---
         labels = [r"$\theta_1$ (rad)", r"$\theta_2$ (rad)",
@@ -135,11 +135,12 @@ class DoublePendulum:
         axes_s = [fig.add_subplot(gs[r, c]) for r in range(2) for c in range(2)]
         vlines = []
         for ax, label, col in zip(axes_s, labels, traj.T):
-            ax.plot(time, col, lw=1)
-            ax.set_ylabel(label, fontsize=8)
-            ax.set_xlabel("t (s)", fontsize=8)
-            ax.tick_params(labelsize=7)
-            vl = ax.axvline(0, color="r", lw=0.8, ls="--")
+            plt.sca(ax)
+            plt.plot(time, col, lw=1)
+            plt.ylabel(label, fontsize=8)
+            plt.xlabel("t (s)", fontsize=8)
+            plt.tick_params(labelsize=7)
+            vl = plt.axvline(0, color="r", lw=0.8, ls="--")
             vlines.append(vl)
 
         def _init():
@@ -170,3 +171,5 @@ class DoublePendulum:
 
         plt.show()
         return ani
+
+
