@@ -1,6 +1,8 @@
+import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from utils import SIGReg
+from double_pendulum import DoublePendulum
 
 
 def test_sigreg():
@@ -14,7 +16,7 @@ def test_sigreg():
     sigreg = SIGReg(num_proj=256, knots=17)
 
     # Start far from Gaussian: skewed, scaled, mean-shifted
-    Z = torch.randn(N, D) * 3.0 + 2.0
+    Z = torch.randn(N, D) * 3.0 + 2.0 + 0.5 * torch.randn(N, D)**3 - 1.0
     Z = Z.requires_grad_(True)
     optimizer = torch.optim.Adam([Z], lr=0.05)
 
@@ -66,7 +68,7 @@ def test_sigreg():
     ax.scatter(Z_final[:, 0].numpy(), Z_final[:, 1].numpy(), alpha=0.3, s=5, label="final")
     ax.set_xlabel("dim 0")
     ax.set_ylabel("dim 1")
-    ax.set_title("Embedding scatter (dims 0–1)")
+    ax.set_title("Embedding scatter (dims 0-1)")
     ax.legend()
     ax.set_aspect("equal")
 
@@ -83,5 +85,14 @@ def test_sigreg():
     print("Plot saved to test_sigreg.png")
 
 
+def test_double_pendulum():
+    """Simulate a double pendulum from a near-inverted position and animate it."""
+    dp = DoublePendulum(m1=1.0, m2=0.5, l1=1.0, l2=0.8, b=0.05, max_torque=5.0, dt=0.02)
+    x0 = np.array([np.pi - 0.2, np.pi + 0.1, 0.0, 0.0])
+    traj = dp.sim(x0, u=0.0, t=10.0)
+    dp.plot(traj)
+
+
 if __name__ == "__main__":
     test_sigreg()
+    test_double_pendulum()
