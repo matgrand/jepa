@@ -9,7 +9,7 @@ def test_sigreg():
     Plots: loss curve, initial vs final distribution of one projection, and
     the embedding scatter before/after.
     """
-    torch.manual_seed(0)
+    torch.manual_seed(42)
     N, D = 512, 32
     sigreg = SIGReg(num_proj=256, knots=17)
 
