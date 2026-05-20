@@ -69,7 +69,7 @@ def test_sigreg():
     plt.gca().set_aspect("equal")
 
     plt.tight_layout()
-    plt.savefig("test_sigreg.png", dpi=120)
+    plt.savefig("imgs/test_sigreg.png", dpi=120)
     plt.show()
 
     loss_init  = sigreg(Z_init).item()

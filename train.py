@@ -57,7 +57,7 @@ for i, label in enumerate(labels):
     if i == 0:
         plt.ylabel("value")
 plt.tight_layout()
-plt.savefig("dataset.png", dpi=120)
+plt.savefig("imgs/dataset.png", dpi=120)
 # plt.show()
 
 
@@ -113,7 +113,7 @@ for epoch in range(N_EPOCHS):
 
         z_t          = enc(x_t)
         z_tp1_pred   = dyn(z_t, u_t)
-        z_tp1_target = enc(x_tp1).detach()  # stop-gradient on target (JEPA)
+        z_tp1_target = enc(x_tp1)
 
         pred_loss = nn.functional.mse_loss(z_tp1_pred, z_tp1_target)
         reg_loss  = sigreg(z_t)
@@ -141,7 +141,7 @@ plt.xlabel("z₀")
 plt.ylabel("z₁")
 plt.gca().set_aspect("equal")
 plt.tight_layout()
-plt.savefig("embeddings.png", dpi=120)
+plt.savefig("imgs/embeddings.png", dpi=120)
 # plt.show()
 
 epochs = range(1, N_EPOCHS + 1)
@@ -157,12 +157,99 @@ plt.title("SIGReg loss")
 plt.xlabel("epoch")
 plt.yscale("log")
 plt.tight_layout()
-plt.savefig("train_losses.png", dpi=120)
+plt.savefig("imgs/train_losses.png", dpi=120)
 # plt.show()
 
 
+# ── Decoder ───────────────────────────────────────────────────────────────────
+
+class Dec(nn.Module):
+    """MLP decoder: embedding (EMB) → state (4), symmetric to Enc."""
+    def __init__(self):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(EMB, HID_END),      nn.SiLU(),
+            nn.Linear(HID_END, HID_END),  nn.SiLU(),
+            nn.Linear(HID_END, 4),
+        )
+
+    def forward(self, z: torch.Tensor) -> torch.Tensor:
+        return self.net(z)
 
 
+# pre-compute embeddings once; enc is frozen
+with torch.no_grad():
+    Z_all = enc(X_curr)
+
+dec_ds = TensorDataset(Z_all, X_curr)
+dec_dl = DataLoader(dec_ds, batch_size=256, shuffle=True)
+
+dec = Dec()
+dec_optimizer = torch.optim.Adam(dec.parameters(), lr=1e-3)
+
+N_EPOCHS_DEC = 50
+dec_losses = []
+
+for epoch in range(N_EPOCHS_DEC):
+    ep_loss = 0.0
+    for z, x in dec_dl:
+        dec_optimizer.zero_grad()
+        loss = nn.functional.mse_loss(dec(z), x)
+        loss.backward()
+        dec_optimizer.step()
+        ep_loss += loss.item()
+    dec_losses.append(ep_loss / len(dec_dl))
+    if (epoch + 1) % 10 == 0:
+        print(f"dec epoch {epoch+1:3d}/{N_EPOCHS_DEC}  loss={dec_losses[-1]:.4f}")
+
+plt.figure(figsize=(5, 4))
+plt.plot(range(1, N_EPOCHS_DEC + 1), dec_losses)
+plt.title("Decoder reconstruction loss")
+plt.xlabel("epoch")
+plt.yscale("log")
+plt.tight_layout()
+plt.savefig("imgs/dec_loss.png", dpi=120)
+
+# ── Latent rollout → decode → plot ────────────────────────────────────────────
+
+T_SIM = 5.0
+n_sim = int(T_SIM / DT)
+u_sim = torch.zeros(1, 1)  # zero torque throughout
+
+x_ic = np.array([
+    np.random.uniform(-np.pi, np.pi),
+    np.random.uniform(-np.pi, np.pi),
+    np.random.uniform(-2.0, 2.0),
+    np.random.uniform(-2.0, 2.0),
+])
+
+with torch.no_grad():
+    z = enc(torch.tensor(x_ic, dtype=torch.float32).unsqueeze(0))  # (1, EMB)
+    Z_traj = [z]
+    for _ in range(n_sim):
+        z = dyn(z, u_sim)
+        Z_traj.append(z)
+    Z_traj = torch.cat(Z_traj, dim=0)   # (n_sim+1, EMB)
+    X_decoded = dec(Z_traj).numpy()     # (n_sim+1, 4)
+
+dp.plot(X_decoded)
+
+# comparison: latent rollout vs true simulation
+X_true = dp.sim(x_ic, u=0.0, t=T_SIM)  # (n_sim+1, 4)
+t_ax = np.arange(n_sim + 1) * DT
+
+plt.figure(figsize=(12, 8))
+plt.suptitle("Latent rollout vs true simulation", fontsize=11)
+for i, label in enumerate(labels):
+    plt.subplot(2, 2, i + 1)
+    plt.plot(t_ax, X_true[:, i],    lw=1.2, label="true")
+    plt.plot(t_ax, X_decoded[:, i], lw=1.2, label="latent", linestyle="--")
+    plt.title(label)
+    plt.xlabel("t (s)")
+    if i == 0:
+        plt.legend()
+plt.tight_layout()
+plt.savefig("imgs/rollout_comparison.png", dpi=120)
 
 
 
